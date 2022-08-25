@@ -2,14 +2,12 @@
 
 No dependencies, no problems. Simple, maintainable, flexible, and ready to use.
 
+Pronounced as `y'all-ee-see` in your thickest American Southern twang.
+
 Another one out in the wild can't hurt, _right_?
 
 
 ## Using
-
-`yallic` tends to prefer function pointers where possible to organize linked lists. This
-extensibility allows overriding of a struct pointer's predefined functions, for better or
-for worse depending on your implementation of it.
 
 Use of the library is fairly straightforward for most simple operations:
 ```c
@@ -31,7 +29,7 @@ for ( size_t x = 0; x < CALLS; x++ ) {
     memset( &values[0], 0, CALLS*sizeof(size_t) );
     for ( size_t y = 0; y < CALLS; y++ ) {
         values[y] = y;
-        p_linkedlist->push( &values[y] );
+        List__push( p_linkedlist, &values[y] );
     }
 
     // Reverse the list. Flips the most-recently added node to index [0] and
@@ -49,16 +47,12 @@ for ( size_t x = 0; x < CALLS; x++ ) {
     //   will attempt to free list contents and nodes alike, but leave the list ptr intact.
     //
     //   A deep clear would cause a crash here since the nodes do not point to heap data.
-    p_linkedlist->clear_shallow();
+    List__clear( p_linkedlist );
 
 }
 
-// Discard the list and deeply free all allocated resources.
-//List__delete( p_linkedlist );
-// ^ The above is not done because the LL doesn't use heap data/resources.
-//   Since the LL was shallowly cleared already in the final for-loop iteration, just free
-//   the list pointer and be done with it.
-free( p_linkedlist );
+// Discard the list and (shallowly) free all list nodes (but not underlying ptrs).
+List__delete( p_linkedlist );
 
 // [...]
 ```

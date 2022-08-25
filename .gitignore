@@ -3,3 +3,6 @@ bin/
 lib/
 
 *.o
+
+Doxyfile
+html/
