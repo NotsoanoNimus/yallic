@@ -25,8 +25,8 @@ Use of the library is fairly straightforward for most simple operations:
 // Static list of values.
 static size_t values[CALLS];
 
-// Create a new linked list with a theoretically-unlimited size.
-List_t* p_linkedlist = List__new( UINT64_MAX );
+// Create a new linked list with a theoretically-unlimited size (UINT64_MAX).
+List_t* p_linkedlist = List__new( 0 );
 
 // Push some items onto the list, reverse it, call some function, then clear it: 1000x.
 for ( size_t x = 0; x < CALLS; x++ ) {
@@ -53,12 +53,12 @@ for ( size_t x = 0; x < CALLS; x++ ) {
     //   will attempt to free list contents and nodes alike, but leave the list ptr intact.
     //
     //   A deep clear would cause a crash here since the nodes do not point to heap data.
-    List__clear( p_linkedlist );
+    List__clear_shallow( p_linkedlist );
 
 }
 
 // Discard the list and (shallowly) free all list nodes (but not underlying ptrs).
-List__delete( p_linkedlist );
+List__delete_shallow( p_linkedlist );
 
 // [...]
 ```

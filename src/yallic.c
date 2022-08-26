@@ -294,7 +294,7 @@ int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
         return List__length( p_list_dest );
 
     // Get the preceding list node.
-    ListNode_t* p_node_before = __List__get_node_at( p_list, (index-1) );
+    ListNode_t* p_node_before = __List__get_node_at( p_list_dest, (index-1) );
     ListNode_t* p_before_link_save = p_node_before->next;   // preserve the old 'next' in case trouble
     if ( NULL == p_node_before )  return -1;
 
