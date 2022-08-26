@@ -59,10 +59,13 @@ List__delete( p_linkedlist );
 
 ## Compiling & Installing
 
-It's intended to be as simple as `make; make install`.
+It's intended to be as simple as `make; make install` if you intend to use the shared library.
 
 If for some reason the shared object (`.so`) file isn't playing nicely, manually place it in the
 typical library location (ex: `/usr/local/lib/`) and change file permissions accordingly.
+
+If you only want to compile the _static library_ for linkage in your own projects, use `make slib`
+to create the `lib/libyallic.a` file and use that with the `yallic.h` file in your project.
 
 
 ## Documentation
