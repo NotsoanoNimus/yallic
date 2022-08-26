@@ -83,6 +83,26 @@ void List__delete_deep( List_t* p_list );
 void List__reverse( List_t** pp_list );
 
 /**
+ * Change a linked list's maximum capacity. If the new capacity is lower than the current
+ *   count of elements in the list, an error is returned and nothing is changed. Otherwise,
+ *   the propert is altered and the new maximum capacity is returned to the caller.
+ *
+ * @param p_list The linked list to resize.
+ * @param new_max_size The new maximum list capacity.
+ * @return The new maximum list capacity. Returns 0 on error (not -1 since the type is
+ *   `size_t`).
+ */
+size_t List__resize( List_t* p_list, size_t new_max_size );
+
+/**
+ * Get the current capacity of a linked list.
+ *
+ * @param p_list The target linked list.
+ * @return The current capacity of the linked list.
+ */
+size_t List__get_max_size( List_t* p_list );
+
+/**
  * Shallow clear of list nodes. Deletes and frees all list nodes, but does _NOT_ attempt
  *   to free the values to which the nodes point. Any lists which have nodes pointing to
  *   the same underlying data (clones) are _not affected_.
@@ -134,7 +154,7 @@ int List__add_at( List_t* p_list, void* p_data, size_t index );
  * @param p_list_src The list being added onto the destination list.
  * @return _-1_ on failure, or the new length of the destination list on success.
  */
-int List__concat( List_t* p_list_dest, List_t* p_list_src );
+int List__extend( List_t* p_list_dest, List_t* p_list_src );
 
 /**
  * Insert a list into another linked list at the given destination index. The source
@@ -147,7 +167,7 @@ int List__concat( List_t* p_list_dest, List_t* p_list_src );
  * @param index The index into the destination list at which to add the source list.
  * @return _-1_ on failure, or the new length of the destination list on success.
  */
-int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index );
+int List__extend_at( List_t* p_list_dest, List_t* p_list_src, size_t index );
 
 
 /**
@@ -383,6 +403,35 @@ void* List__to_array( List_t* p_list, size_t element_size );
  * @return A new, independent linked list object from the initial data. _NULL_ on error.
  */
 List_t* List__from_array( void* p_array, size_t element_size, size_t count, size_t list_max_size );
+
+
+
+/**
+ * Iterate the elements in a linked list and perform an operation for each. When the
+ *   individual operations are finished executing, the ending `callback` is executed
+ *   and the result of the operation is stored in the *pp_result* parameter. This iterable
+ *   mechanism is _intended_ to be customizable and flexible, allowing an initial input to
+ *   be provided to each linked list item (mutable along the way as desired), as well as
+ *   providing an in-memory way to return results from everything.
+ *
+ * @param p_list The list to iterate.
+ * @param pp_result A generic double-pointer used to store the result of the iteration(s).
+ * @param p_input A generic pointer to some data which is fed into each *action* call, as
+ *   well as the callback function.
+ * @param action A per-element operation which accepts the node data, the input data, and
+ *   the result double-pointer, respectively.
+ * @param callback A final, summary operation called after all iterations have finished.
+ *   This accepts the input data and the result double-pointer as parameters respectively.
+ * @return Nothing. The result of the operations performed by the action and callbacks
+ *   are up to the caller, but they are stored in the given pointer reference *pp_result*.
+ */
+void List__for_each(
+    List_t* p_list,
+    void**  pp_result,
+    void*   p_input,
+    void    (*action)(void*, void*, void**),
+    void    (*callback)(void*, void**)
+);
 
 
 

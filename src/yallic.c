@@ -134,6 +134,26 @@ void List__reverse( List_t** pp_list ) {
 }
 
 
+// Shrink or grow a list capacity to the given max_size. If the linked list contains more
+//   elements than the new max_size, an error is returned. Otherwise, return the new max.
+size_t List__resize( List_t* p_list, size_t new_max_size ) {
+    if (
+           NULL == p_list
+        || new_max_size <= 0
+        || (new_max_size < List__length( p_list ))
+    )  return 0;
+
+    p_list->max_size = new_max_size;
+    return new_max_size;
+}
+
+
+// Wrapper method to get max_size property.
+size_t List__get_max_size( List_t* p_list ) {
+    return (NULL == p_list) ? 0 : p_list->max_size;
+}
+
+
 // Shallowly delete a linked list structure, but not the underlying resources.
 void List__clear_shallow( List_t* p_list ) {
     if (  List__length( p_list ) > 0  ) {
@@ -229,7 +249,7 @@ int List__add_at( List_t* p_list, void* p_data, size_t index ) {
 }
 
 // Staple the src linked list to the end of the dest linked list.
-int List__concat( List_t* p_list_dest, List_t* p_list_src ) {
+int List__extend( List_t* p_list_dest, List_t* p_list_src ) {
     if (
            NULL == p_list_dest
         || ((List__length(p_list_dest) + List__length(p_list_src)) > p_list_dest->max_size)
@@ -282,7 +302,7 @@ int List__concat( List_t* p_list_dest, List_t* p_list_src ) {
 
 
 // Insert the src linked list into the dest linked list at the index.
-int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
+int List__extend_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
     if (
            NULL == p_list_dest
         || ((List__length(p_list_dest) + List__length(p_list_src)) > p_list_dest->max_size)
@@ -656,6 +676,28 @@ List_t* List__from_array(
 
     // Return the pointer to the new list.
     return p_list;
+}
+
+
+// For-each iterable functionality  [ or at least an attempt at it :') ].
+void List__for_each(
+    List_t* p_list,
+    void**  pp_result,
+    void*   p_input,
+    void    (*action)(void*, void*, void**),
+    void    (*callback)(void*, void**)
+) {
+    if (  NULL == p_list || (0 == List__length( p_list ))  )  return;
+
+    ListNode_t* p_scroll = p_list->head;
+    while ( NULL != p_scroll ) {
+        (*action)( p_scroll->data, p_input, pp_result );
+
+        p_scroll = p_scroll->next;
+    }
+
+    (*callback)( p_input, pp_result );
+    return;
 }
 
 
