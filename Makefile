@@ -12,13 +12,17 @@ LIB=lib
 SLIB=$(LIB)/lib$(PROJNAME).a
 DLIB=$(LIB)/lib$(PROJNAME).so
 
-.PHONY: all clean slib dlib
+TEST=test
+TESTS=$(TEST)/$(PROJNAME)_test
+
+.PHONY: all clean slib dlib tests $(TESTS)
 .DEFAULT_GOAL = all
 
 
 clean:
 	if [ -d $(LIB) ]; then rm -r $(LIB); fi
 	if [ -d $(OBJ) ]; then rm -r $(OBJ); fi
+	if [ -f $(TESTS) ]; then rm -f $(TESTS)*; fi
 
 
 all: slib dlib
@@ -38,3 +42,14 @@ $(SLIB): $(OBJS)
 
 $(DLIB): $(OBJS)
 	$(CC) -shared $(OBJS) -o $(DLIB)
+
+
+tests: CFLAGS=-g -Wall -O0 -DEBUG -L./lib/ -L/usr/local/lib64 -Wl,-rpath,/usr/local/lib64
+tests: clean
+tests: $(TESTS)
+
+$(TESTS): $(SLIB) $(TEST)
+	$(CC) $(CFLAGS) -c $(TEST)/lists_test.c -o $(TESTS).o
+	$(CC) $(CFLAGS) $(TESTS).o -o $(TESTS) -lcriterion -l$(PROJNAME)
+	if [ ! -x $(TESTS) ]; then chmod +x $(TESTS); fi
+	./$(TESTS)

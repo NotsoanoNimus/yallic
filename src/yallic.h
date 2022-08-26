@@ -30,23 +30,11 @@
 
 #include <stddef.h>
 
-#define YALLIC_LIST_SIZE_MAX 0xFFFFFFFFFFFFFFFF   /**< Linked list maximum allowable count. */
 
-
-
-/**
- * Represents individual, generic linked-list elements. These consist of a node pointer
- *   to some resource or data type, and a pointer to the adjacent (next) list node.
- *
- * @see List_t
- */
-typedef struct __linked_list_node_t ListNode_t;
 
 /**
  * The primary, generic linked-list structure.
- *   The LIST maintains a max_count with a HEAD pointer.
- *
- * @see ListNode_t
+ *   The structure simply maintains a max_count with a HEAD pointer.
  */
 typedef struct __linked_list_t List_t;
 
@@ -65,11 +53,12 @@ List_t* List__new( size_t max_size );
  * Destroy a linked list. If the list hasn't been cleared--meaning a count-check on
  *   the list is greater than 0--then this function will attempt a shallow clear on
  *   the list. __To prevent memory leaks__, use the @{List__clean_deep(List_t* p_list)}
- *   method before invoking this function.
+ *   method before invoking this function, or simply use the List__delete_deep() call
+ *   if it's true that _all_ list data nodes are allocated/free-able heap blocks.
  *
  * @see {List__clean_deep(List_t* p_list)}
  */
-void List__delete( List_t* p_list );
+void List__delete_shallow( List_t* p_list );
 
 /**
  * Deeply delete underlying list node data, list nodes, and destroy the list. This method
@@ -315,9 +304,32 @@ size_t List__count( List_t* p_list );
 
 
 /**
- * Convert the linked list to a type-agnostic, linear memory space.
+ * Convert the linked list to a type-agnostic, linear memory space. This simply scrolls
+ *   through each list node, copies the raw memory of each data pointer according to the
+ *   provided element_size value, and pastes it into a contiguous chunk of memory. This
+ *   means the new array of elements is ___separate and independent___ from the original
+ *   linked list. Therefore, if the list is destroyed, the array will still be preserved
+ *   in its own memory on the heap until freed separately.
+ *
+ * @param element_size The expected size of the underlying linked list type.
+ * @return Pointer to the newly-allocated array on the heap. _NULL_ on error.
  */
 void* List__to_array( List_t* p_list, size_t element_size );
+
+/**
+ * Convert an array of data to a linked list. This linearly iterates all memory in the source
+ *   array, stepping by the given size up to the given count, and _copies_ data into a
+ *   resulting linked list structure. The resulting objects are independent of each other: the
+ *   list can be deleted without affecting memory held in the array, and vice-versa.
+ *
+ * @param p_array The initial contiguous segment of array data to read into a linked list.
+ * @param element_size The size of each independent array element.
+ * @param count The amount of array elements to copy into the linked list.
+ * @param list_max_size The maximum size of the resulting linked list. _Cannot_ be less than
+ *   the provided _count_ parameter.
+ * @return A new, independent linked list object from the initial data. _NULL_ on error.
+ */
+List_t* List__from_array( void* p_array, size_t element_size, size_t count, size_t list_max_size );
 
 
 
