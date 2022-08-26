@@ -3,7 +3,6 @@ bin/
 lib/
 test/yallic_test
 test/yallic_test.o
-Doxyfile
 html/
 
 *.o

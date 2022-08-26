@@ -1,9 +1,15 @@
 # yallic - Yet Another Linked List Implementation in C
 
-No dependencies, no problems. Simple, maintainable, flexible, and ready to use.
+No dependencies, no problems. Simple, maintainable, flexible, extensible, and ready to use.
+
+The `yallic` design is heavily inspired by
+[Java's implementation](https://docs.oracle.com/javase/7/docs/api/java/util/LinkedList.html)
+(from JDK 7) of generic linked list types.
+
+See the [project documentation](https://xmit.xyz/yallic/index.html) for usage information,
+or just thumb through the `yallic.h` header file. This is a very tiny and portable library.
 
 Pronounced as `y'all-ee-see` in your thickest American Southern twang.
-
 Another one out in the wild can't hurt, _right_?
 
 

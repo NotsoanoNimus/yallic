@@ -3,6 +3,8 @@
  * @author Suriel (Zachary) Puhl
  * @date August 2022
  *
+ * Yet Another Linked list Implementation in C.
+ *
  */
 
 #include "yallic.h"
@@ -10,11 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NEW_LIST(name,size) \
-    List_t* name = (List_t*)calloc( 1, sizeof(List_t) ); \
-    name->head = NULL; name->max_size = size;
 #define LIST_NODE_INITIALIZER (ListNode_t*)calloc( 1, sizeof(ListNode_t) )
-#define NEW_LIST_NODE(name) ListNode_t* name = LIST_NODE_INITIALIZER;
 
 static const unsigned long long __list_size_max_limit = 0xFFFFFFFFFFFFFFFF;   /**< Linked list maximum allowable count. */
 
@@ -56,14 +54,25 @@ struct __linked_list_t {
 
 // Internal function prototypes as needed.
 static ListNode_t* __List__get_last_node( List_t* p_list );
+static ListNode_t* __List__get_node_at( List_t* p_list, size_t index );
+static ListNode_t* __List__get_node_first_occurrence( List_t* p_list, void* p_data );
+static ListNode_t* __List__get_node_last_occurrence( List_t* p_list, void* p_data );
+static size_t __List__index_of_node( List_t* p_list, ListNode_t* p_node );
 
 
 
 // Create a new linked list.
 List_t* List__new( size_t max_size ) {
-    NEW_LIST(p_list,max_size);
+    if ( max_size <= 0 )
+        max_size = __list_size_max_limit;
+
+    List_t* p_list = (List_t*)calloc( 1, sizeof(List_t) );
+    p_list->head = NULL;
+    p_list->max_size = max_size;
+
     return p_list;
 }
+
 
 // Shallow deletion of list elements and the list allocation itself.
 void List__delete_shallow( List_t* p_list ) {
@@ -103,7 +112,7 @@ void List__reverse( List_t** pp_list ) {
     //   Using the underlying stack-like mechanism of the list makes this simple and quick.
     ListNode_t* p_node = (*pp_list)->head;
     while ( NULL != p_node ) {
-        List__push( p_new, p_node );
+        List__push( p_new, p_node->data );
         p_node = p_node->next;
     }
 
@@ -127,6 +136,7 @@ void List__clear_shallow( List_t* p_list ) {
         }
     }
 }
+
 
 // Deeply free all held list resources.
 void List__clear_deep( List_t* p_list ) {
@@ -171,6 +181,7 @@ int List__add( List_t* p_list, void* p_data ) {
     return List__length( p_list );
 }
 
+
 // Add an item to a linked list somewhere in its chain of nodes.
 int List__add_at( List_t* p_list, void* p_data, size_t index ) {
     if (
@@ -180,33 +191,27 @@ int List__add_at( List_t* p_list, void* p_data, size_t index ) {
         || (index > List__length( p_list ))   // if len == 3, and list has 0,1,2; this is ok
     )  return -1;
 
+    // If the new location is head, just insert it and be done; no looping.
+    if ( 0 == index ) {
+        List__push( p_list, p_data );
+        return index;
+    } else if ( List__length( p_list ) == index ) {
+        List__add( p_list, p_data );
+        return index;
+    }
+
+    // Get the preceding list node.
+    ListNode_t* p_node_before = __List__get_node_at( p_list, (index-1) );
+    if ( NULL == p_node_before )  return -1;
+
+    // Get the following (next) node after the one being added.
+    ListNode_t* p_node_after = p_node_before->next;
+
     // Create the new node.
     ListNode_t* p_new_node = LIST_NODE_INITIALIZER;
     p_new_node->data = p_data;
 
-    // If the new location is head, just insert it and be done; no looping.
-    if ( 0 == index ) {
-        p_new_node->next = p_list->head;
-        p_list->head = p_new_node;
-    }
-
-    size_t i = 1;   // important: starts at 1
-    ListNode_t* p_node_before = p_list->head;
-
-    // Get up to the node before where the new one is being inserted.
-    while ( NULL != p_node_before && i < index ) {
-        p_node_before = p_node_before->next;
-        i++;
-    }
-
-    // Shouldn't happen, but if it does, need to bail here.
-    if ( NULL == p_node_before ) {
-        free( p_new_node );
-        return -1;
-    }
-
     // Insert the new node.
-    ListNode_t* p_node_after = p_node_before->next;
     p_node_before->next = p_new_node;
     p_new_node->next = p_node_after;
 
@@ -266,43 +271,191 @@ int List__concat( List_t* p_list_dest, List_t* p_list_src ) {
     return List__length( p_list_dest );
 }
 
-// Insert the src linked list into the dest linked list at the index.
-int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {}
 
-List_t* List__clone( List_t* p_list ) {}
-int List__contains( List_t* p_list, void* p_data ) {}
-void* List__get_first( List_t* p_list ) {}
-void* List__get_last( List_t* p_list ) {}
-void* List__get_at( List_t* p_list, size_t index ) {}
-int List__index_of( List_t* p_list, void* p_data ) {}
-void* List__last_index_of( List_t* p_list, void* p_data ) {}
-void* List__pop( List_t* p_list ) {}
-int List__push( List_t* p_list, void* p_data ) {}
-void* List__remove_first( List_t* p_list ) {}
-void* List__remove_last( List_t* p_list ) {}
-void* List__remove_at( List_t* p_list, size_t index ) {}
-void* List__remove_first_occurrence( List_t* p_list, void* p_data ) {}
-void* List__remove_last_occurrence( List_t* p_list, void* p_data ) {}
+// Insert the src linked list into the dest linked list at the index.
+int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
+}
+
+
+// Shallow clone of a linked list's structure. This does not copy underlying data.
+List_t* List__clone( List_t* p_list ) {
+}
+
+
+// Deep copy of a linked list. This creates a fully-independent copy of the provided list.
+List_t* List__copy( List_t* p_list, size_t element_size ) {
+}
+
+
+// Gets whether the data pointer exists somewhere within the linked list.
+int List__contains( List_t* p_list, void* p_data ) {
+    ListNode_t* p_occ = __List__get_node_first_occurrence( p_list, p_data );
+
+    return ( NULL == p_occ ) ? -1 : (__List__index_of_node( p_list, p_occ ));
+}
+
+
+// Gets the first data element (HEAD) of the linked list.
+void* List__get_first( List_t* p_list ) {
+    if ( NULL == p_list || NULL == p_list->head )  return NULL;
+
+    return p_list->head->data;
+}
+
+
+// Gets the final data element (TAIL) of the linked list.
+void* List__get_last( List_t* p_list ) {
+    ListNode_t* p_last = __List__get_last_node( p_list );
+
+    return ( NULL == p_last ) ? NULL : p_last->data;
+}
+
+
+// Gets the data element at the selected index from the linked list.
+void* List__get_at( List_t* p_list, size_t index ) {
+    ListNode_t* p_node = __List__get_node_at( p_list, index );
+
+    return ( NULL == p_node ) ? NULL : p_node->data;
+}
+
+
+// Returns the 0-based array index of the data pointer.
+int List__index_of( List_t* p_list, void* p_data ) {
+    ListNode_t* p_node = __List__get_node_first_occurrence( p_list, p_data );
+
+    return __List__index_of_node( p_list, p_node );
+}
+
+
+// Returns the final 0-based array index of the data pointer.
+int List__last_index_of( List_t* p_list, void* p_data ) {
+    ListNode_t* p_node = __List__get_node_last_occurrence( p_list, p_data );
+
+    return __List__index_of_node( p_list, p_node );
+}
+
+
+// Pop off the current first element (HEAD) of the linked list, free the
+//    node (NOT the data), and return its data pointer.
+void* List__pop( List_t* p_list ) {
+    if (
+           NULL == p_list
+        || NULL == p_list->head
+        || (0 == List__length( p_list ))
+    )  return NULL;
+
+    // Save head node information.
+    void* p_save = p_list->head->data;
+    ListNode_t* p_next = p_list->head->next;
+
+    // Free the old head and set it the the next/saved stack item.
+    free( p_list->head );
+    p_list->head = p_next;
+
+    // Return the saved data pointer from the old head node.
+    return p_save;
+}
+
+
+// Push a new HEAD element/node onto the linked list.
+int List__push( List_t* p_list, void* p_data ) {
+    if (
+           NULL == p_list
+        || NULL == p_data
+        || ((List__length( p_list ) + 1) > p_list->max_size)
+    )  return -1;
+
+    // New linked list node.
+    ListNode_t* p_node = LIST_NODE_INITIALIZER;
+    p_node->data = p_data;
+
+    // Swap in the new list head.
+    p_node->next = p_list->head;
+    p_list->head = p_node;
+
+    return List__length( p_list );
+}
+
+
+// Remove the first list item (HEAD) and return its data pointer. Wrapper for 'pop'.
+void* List__remove_first( List_t* p_list ) {
+    return List__pop( p_list );
+}
+
+
+// Remove the final list item (TAIL) and return its data pointer.
+void* List__remove_last( List_t* p_list ) {
+    ListNode_t* p_tail = __List__get_last_node( p_list );
+    if ( NULL == p_tail )  return NULL;
+
+    ListNode_t* p_head = p_list->head;
+    while ( NULL != p_head ) {
+        if ( p_head->next == p_tail )
+            p_head->next = NULL;   //sever list chain before the last node, cutting it out
+
+        p_head = p_head->next;
+    }
+
+    // Save the data pointer, free the ListNode_t object, and return the old data pointer.
+    void* p_save = p_tail->data;
+    free( p_tail );
+
+    return p_save;
+}
+
+
+// Remove the list node at the specified index and return its data pointer.
+void* List__remove_at( List_t* p_list, size_t index ) {
+    if (
+           NULL == p_list
+        || (0 == List__length( p_list ))
+        || index >= List__length( p_list )
+    )  return NULL;
+
+    // Knock out easy cases first as applicable.
+    if ( 0 == index )
+        return List__pop( p_list );
+    else if (  (List__length( p_list )-1) == index  )
+        return List__remove_last( p_list );
+
+    // If the element is in the middle somewhere, pop it out and bridge.
+    ListNode_t* p_before = __List__get_node_at( p_list, (index-1) );
+    ListNode_t* p_target = p_before->next; //__List__get_node_at( p_list,  index    );
+    ListNode_t* p_after  = p_target->next; //__List__get_node_at( p_list, (index+1) );
+
+    // A NULL 'after' is OK since it's probably in some way the list tail.
+    if ( NULL == p_before || NULL == p_target )  return NULL;
+
+    // Remove the node, saving its data pointer first, then bridge the gap.
+    void* p_save = p_target->data;
+    free( p_target );
+
+    p_before->next = p_after;
+    return p_save;
+}
+
+
+// Remove the first occurrence of the node data pointer.
+void* List__remove_first_occurrence( List_t* p_list, void* p_data ) {
+    int index = List__index_of( p_list, p_data );
+    if ( -1 == index )  return NULL;
+
+    return List__remove_at( p_list, (size_t)index );
+}
+
+
+// Remove the final occurrence of the node data pointer.
+void* List__remove_last_occurrence( List_t* p_list, void* p_data ) {
+    int index = List__last_index_of( p_list, p_data );
+    if ( -1 == index )  return NULL;
+
+    return List__remove_at( p_list, (size_t)index );
+}
 
 
 // Set the node data pointer at the selected location and return the old pointer.
 void* List__set_at( List_t* p_list, size_t index, void* p_new_data ) {
-    if (
-           NULL == p_list
-        || NULL == p_new_data
-        || (index >= List__length( p_list ))   //index is 0-based, len is not, thus >=
-    )  return NULL;
-
-    // Get the node at the index.
-    size_t i = 0;
-    ListNode_t* p_node = p_list->head;
-    while ( NULL != p_node && i < index ) {
-        p_node = p_node->next;
-        i++;
-    }
-
-    // Just in case.
-    if ( NULL == p_node )  return NULL;
+    ListNode_t* p_node = __List__get_node_at( p_list, index );
 
     // Swap data pointer and return the old pointer in case caller wants to free.
     void* p_save = p_node->data;
@@ -327,11 +480,11 @@ size_t List__length( List_t* p_list ) {
     return count;
 }
 
+
 // Wrapper/Alias function.
 size_t List__count( List_t* p_list ) {
     return List__length( p_list );
 }
-
 
 
 // Copy all linked list elements to a contiguous chunk of memory. NULL on error.
@@ -367,6 +520,7 @@ void* List__to_array( List_t* p_list, size_t element_size ) {
     // Return the pointer to the populated array space.
     return (void*)p_dest;
 }
+
 
 // Create a new linked list from an array.
 List_t* List__from_array(
@@ -411,6 +565,8 @@ List_t* List__from_array(
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Internal functions.
+
+// Fetch the tail node of the list. NULL on error condition.
 static ListNode_t* __List__get_last_node( List_t* p_list ) {
     if ( NULL == p_list )  return NULL;
 
@@ -421,4 +577,80 @@ static ListNode_t* __List__get_last_node( List_t* p_list ) {
     }
 
     return NULL;
+}
+
+
+// Fetch the node at the given index. NULL on error condition.
+static ListNode_t* __List__get_node_at( List_t* p_list, size_t index ) {
+    if (
+           NULL == p_list
+        || (index >= List__length( p_list ))
+     )  return NULL;
+
+    ListNode_t* p_node = p_list->head;
+    for ( size_t i = 0; i < index && NULL != p_node; i++ )
+        p_node = p_node->next;
+
+    return p_node;
+}
+
+
+// Fetch the first occurrence of the node with the given data pointer.
+//   NULL on error condition or pointer not found.
+static ListNode_t* __List__get_node_first_occurrence( List_t* p_list, void* p_data ) {
+    if (
+           NULL == p_list
+        || NULL == p_data
+        || (0 == List__length( p_list ))
+    )  return NULL;
+
+    ListNode_t* p_node = p_list->head;
+    while ( NULL != p_node ) {
+        if ( p_node->data == p_data )
+            return p_node;
+    }
+
+    return NULL;
+}
+
+
+// Fetch the last occurrence of the node with the given data pointer.
+//   NULL on error condition or pointer not found.
+static ListNode_t* __List__get_node_last_occurrence( List_t* p_list, void* p_data ) {
+    if (
+           NULL == p_list
+        || NULL == p_data
+        || (0 == List__length( p_list ))
+    )  return NULL;
+
+    ListNode_t* p_node = p_list->head;
+    ListNode_t* p_node_shadow = NULL;
+
+    while ( NULL != p_node ) {
+        if ( p_node->data == p_data )
+            p_node_shadow = p_node;
+
+        p_node = p_node->next;
+    }
+
+    return p_node_shadow;
+}
+
+
+// Get the index of the node pointer (NOT THE DATA OF THE NODE) from the linked list HEAD.
+static size_t __List__index_of_node( List_t* p_list, ListNode_t* p_node ) {
+    if (
+           NULL == p_list
+        || NULL == p_node
+        || (0 == List__length( p_list ))
+    )  return -1;
+
+    size_t index = 0;
+    ListNode_t* p_scroll = p_list->head;
+    while (  NULL != p_scroll && p_scroll != p_node && index < List__length( p_list )  ) {
+        p_scroll = p_scroll->next;
+        index++;
+    }
+
+    return (index > List__length( p_list )) ? -1 : index;
 }

@@ -44,7 +44,8 @@ typedef struct __linked_list_t List_t;
  * Initialize a new linked list. This initializes the structure and its override-able
  *   method pointers internally.
  *
- * @param max_size Maximum size of the created linked list.
+ * @param max_size Maximum size of the created linked list. If this is set to 0 or NULL,
+ *   the library assumes no theoretical limit to the length of the linked list.
  * @return A pointer to the allocated linked list. NULL on error.
  */
 List_t* List__new( size_t max_size );
@@ -153,6 +154,17 @@ List_t* List__clone( List_t* p_list );
 
 
 /**
+ * Fully and deeply copies a linked list. The new linked list returned is fully
+ *   independent from the original list, and can be deeply freed/destroyed without
+ *   affecting it (and vice-versa).
+ *
+ * @param element_size The size of each of the underlying list elements.
+ * @return Pointer to the newly-copied, independent linked list. _NULL_ on error.
+ */
+List_t* List__copy( List_t* p_list, size_t element_size );
+
+
+/**
  * Search a list for the presence of a data pointer. If the data pointer is found in
  *   the linked list, its first occurrence index is returned.
  *
@@ -207,7 +219,7 @@ int List__index_of( List_t* p_list, void* p_data );
  * @return The index into the linked list where the last occurrence of the pointer is
  *   found. Returns _-1_ if the pointer was not found.
  */
-void* List__last_index_of( List_t* p_list, void* p_data );
+int List__last_index_of( List_t* p_list, void* p_data );
 
 
 /**
