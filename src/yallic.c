@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * A simple, internally-used macro to allocate a new linked list node item.
+ *
+ * @see ListNode_t*
+ */
 #define LIST_NODE_INITIALIZER (ListNode_t*)calloc( 1, sizeof(ListNode_t) )
 
 static const unsigned long long __list_size_max_limit = 0xFFFFFFFFFFFFFFFF;   /**< Linked list maximum allowable count. */
@@ -20,10 +25,12 @@ static const unsigned long long __list_size_max_limit = 0xFFFFFFFFFFFFFFFF;   /*
 
 /**
  * Represents individual, generic linked-list elements. These consist of a node pointer
- *   to some resource or data type, and a pointer to the adjacent (next) list node.
+ *   to some resource or data type, and a pointer to the adjacent (next) list node. These
+ *   are never intended to be accessed directly outside of the main translation unit of
+ *   yallic.
  *
- * @typedef ListNode_t yallic.h
- * @see List_t
+ * @typedef ListNode_t
+ * @struct ListNode_t
  */
 struct __linked_list_node_t {
     void* data;   /**< Pointer to the underlying node data. */
@@ -32,7 +39,9 @@ struct __linked_list_node_t {
 
 /**
  * Represents individual, generic linked-list elements. These consist of a node pointer
- *   to some resource or data type, and a pointer to the adjacent (next) list node.
+ *   to some resource or data type, and a pointer to the adjacent (next) list node. These
+ *   are never intended to be accessed directly outside of the main translation unit of
+ *   yallic.
  *
  * @see List_t
  */
@@ -42,8 +51,8 @@ typedef struct __linked_list_node_t ListNode_t;
  * The primary, generic linked-list structure.
  *   The LIST maintains a max_count with a HEAD pointer.
  *
- * @typedef List_t yallic.h
- * @see ListNode_t
+ * @typedef List_t
+ * @struct List_t
  */
 struct __linked_list_t {
     ListNode_t* head;   /**< The list's HEAD pointer. */
@@ -267,23 +276,116 @@ int List__concat( List_t* p_list_dest, List_t* p_list_src ) {
     // Ensure the final tail node points to NULL as an enforcement.
     p_tail_scroll->next = NULL;
 
-    // Return new linked list length.
+    // Return new destination linked list length.
     return List__length( p_list_dest );
 }
 
 
 // Insert the src linked list into the dest linked list at the index.
 int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
+    if (
+           NULL == p_list_dest
+        || ((List__length(p_list_dest) + List__length(p_list_src)) > p_list_dest->max_size)
+        || (index > List__length( p_list_dest ))   // can be the new tail index, so 3 from 0,1,2 (len3)
+    )  return -1;
+
+    // Nothing to add.
+    if (  NULL == p_list_src || 0 == List__length( p_list_src )  )
+        return List__length( p_list_dest );
+
+    // Get the preceding list node.
+    ListNode_t* p_node_before = __List__get_node_at( p_list, (index-1) );
+    ListNode_t* p_before_link_save = p_node_before->next;   // preserve the old 'next' in case trouble
+    if ( NULL == p_node_before )  return -1;
+
+    // Append the list.
+    ListNode_t* p_scroll = p_list_src->head;
+    while ( NULL != p_scroll ) {
+        // Create and add the new node.
+        ListNode_t* p_new_node = LIST_NODE_INITIALIZER;
+        p_new_node->data = p_scroll->data;
+
+        // If the list being copied is about to end (tail), restore the save point as the 'next' ptr.
+        //   This should re-establish the linked list chain properly.
+        p_new_node->next = (NULL == p_scroll->next) ? p_before_link_save : NULL;
+
+        p_node_before->next = p_new_node;
+        p_scroll = p_scroll->next;
+    }
+
+    // Return new destination linked list length.
+    return List__length( p_list_dest );
 }
 
 
 // Shallow clone of a linked list's structure. This does not copy underlying data.
 List_t* List__clone( List_t* p_list ) {
+    if ( NULL == p_list )  return NULL;
+
+    List_t* p_new = List__new( p_list->max_size );
+
+    ListNode_t* p_scroll = p_list->head;
+    while ( NULL != p_scroll ) {
+        if (  -1 == List__add( p_new, p_scroll->data )  ) {
+            // If something goes wrong, revert the list changes and destroy the clone.
+            List__delete_shallow( p_new );
+            return NULL;
+        }
+
+        p_scroll = p_scroll->next;
+    }
+
+    return p_new;
+}
+
+
+// Slice a given linked list according to two indices.
+List_t* List__slice( List_t* p_list, size_t from_index, size_t to_index ) {
+    if ( from_index >= to_index || NULL == p_list )  return NULL;
+
+    ListNode_t* p_start = __List__get_node_at( p_list, from_index );
+    ListNode_t* p_end   = __List__get_node_at( p_list, to_index );
+    if ( NULL == p_start || NULL == p_end )  return NULL;
+
+    List_t* p_new = List__new( p_list->max_size );
+
+    // From start to end of the slice, build up the new list sequentially.
+    while ( p_start != p_end->next ) {
+        if (  -1 == List__add( p_new, p_start->data )  ) {
+            List__delete_shallow( p_new );
+            return NULL;
+        }
+
+        p_start = p_start->next;
+    }
+
+    return p_new;
 }
 
 
 // Deep copy of a linked list. This creates a fully-independent copy of the provided list.
 List_t* List__copy( List_t* p_list, size_t element_size ) {
+    if ( NULL == p_list || element_size <= 0 )  return NULL;
+
+    List_t* p_new = List__new( p_list->max_size );
+
+    ListNode_t* p_scroll = p_list->head;
+    while ( NULL != p_scroll ) {
+        // Allocate a copy of the scroll node's data.
+        void* p_new_data = calloc( 1, element_size );
+        memcpy( p_new_data, p_scroll->data, element_size );
+
+        if (  -1 == List__add( p_new, p_new_data )  ) {
+            // If something goes wrong, revert the list changes and nuke the copied data.
+            free( p_new_data );
+            List__delete_deep( p_new );
+            return NULL;
+        }
+
+        p_scroll = p_scroll->next;
+    }
+
+    return p_new;
 }
 
 

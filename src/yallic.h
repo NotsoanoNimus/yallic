@@ -53,11 +53,11 @@ List_t* List__new( size_t max_size );
 /**
  * Destroy a linked list. If the list hasn't been cleared--meaning a count-check on
  *   the list is greater than 0--then this function will attempt a shallow clear on
- *   the list. __To prevent memory leaks__, use the @{List__clean_deep(List_t* p_list)}
+ *   the list. <br />__To prevent memory leaks__, use the `List__clean_deep( List_t* p_list )`
  *   method before invoking this function, or simply use the List__delete_deep() call
  *   if it's true that _all_ list data nodes are allocated/free-able heap blocks.
  *
- * @see {List__clean_deep(List_t* p_list)}
+ * @param p_list The target linked list.
  */
 void List__delete_shallow( List_t* p_list );
 
@@ -66,6 +66,8 @@ void List__delete_shallow( List_t* p_list );
  *   assumes the caller ran it explicitly and intentionally, and therefore tries to
  *   forcibly deallocate all list data regardless of what's allocated or given (unless the
  *   List_t pointer is NULL).
+ *
+ * @param p_list The target linked list.
  */
 void List__delete_deep( List_t* p_list );
 
@@ -84,6 +86,8 @@ void List__reverse( List_t** pp_list );
  * Shallow clear of list nodes. Deletes and frees all list nodes, but does _NOT_ attempt
  *   to free the values to which the nodes point. Any lists which have nodes pointing to
  *   the same underlying data (clones) are _not affected_.
+ *
+ * @param p_list The target linked list.
  */
 void List__clear_shallow( List_t* p_list );
 
@@ -93,6 +97,8 @@ void List__clear_shallow( List_t* p_list );
  *   attempts to dereference underlying data can result in undefined behavior. Additionally,
  *   attempts to use this on lists containing unallocated node data pointers will also
  *   result in undefined or problematic behavior.
+ *
+ * @param p_list The target linked list.
  */
 void List__clear_deep( List_t* p_list );
 
@@ -101,6 +107,7 @@ void List__clear_deep( List_t* p_list );
  * Add a node to the _tail end_ of the linked list. If the addition of the new node would
  *   cause the linked list to exceed its size limit, the operation is canceled in error.
  *
+ * @param p_list The target linked list.
  * @param p_data A pointer to the data to add.
  * @return _-1_ on failure, or the index of the newly-added element on success.
  */
@@ -111,6 +118,7 @@ int List__add( List_t* p_list, void* p_data );
  *   to the list causes the tail of the list to go out-of-bounds (beyond the max_size),
  *   the old list tail will be lost.
  *
+ * @param p_list The target linked list.
  * @param p_data A pointer to the data to add.
  * @param index A 0-based position at which to add the new node.
  * @return _-1_ on failure or out-of-bounds, or the index value to indicate success.
@@ -143,7 +151,22 @@ int List__insert_at( List_t* p_list_dest, List_t* p_list_src, size_t index );
 
 
 /**
- * Create a shallow copy of the given linked list and returns a new linked list
+ * Create a cloned (shallow) linked list from a subset of a larger source list. The
+ *   two given indices are _inclusive_, meaning a range of 1-2 will include _both_
+ *   elements 1 and 2 in the resulting subset clone, 2-5 will include elements 2, 3,
+ *   4, & 5 in it, etc. etc.
+ *
+ * @param p_list The list to slice.
+ * @param from_index The starting index to slice from *p_list*.
+ * @param to_index The ending index to slice to from *p_list*.
+ * @return Pointer to a new list containing shallow copies from the original linked
+ *   within the specified range. _NULL_ on error.
+ */
+List_t* List__slice( List_t* p_list, size_t from_index, size_t to_index );
+
+
+/**
+ * Create a shallow copy of the given linked list and return a new linked list
  *   pointer. Shallow copies do not independently copy the underlying node data,
  *   only the structure of the linked list itself.
  *
@@ -154,10 +177,11 @@ List_t* List__clone( List_t* p_list );
 
 
 /**
- * Fully and deeply copies a linked list. The new linked list returned is fully
+ * Fully and deeply copy a linked list. The new linked list returned is fully
  *   independent from the original list, and can be deeply freed/destroyed without
  *   affecting it (and vice-versa).
  *
+ * @param p_list The target linked list to copy.
  * @param element_size The size of each of the underlying list elements.
  * @return Pointer to the newly-copied, independent linked list. _NULL_ on error.
  */
@@ -168,6 +192,7 @@ List_t* List__copy( List_t* p_list, size_t element_size );
  * Search a list for the presence of a data pointer. If the data pointer is found in
  *   the linked list, its first occurrence index is returned.
  *
+ * @param p_list The target linked list.
  * @param p_data The object/reference to seek inside the linked list.
  * @return _-1_ if the value is not found in the list, the index of the first occurrence
  *   on success.
@@ -179,6 +204,7 @@ int List__contains( List_t* p_list, void* p_data );
  * Return the data pointer from the first list element (HEAD). If the linked list is empty,
  *   this will return _NULL_.
  *
+ * @param p_list The target linked list.
  * @return The list's first data pointer. NULL on an empty or invalid linked list.
  */
 void* List__get_first( List_t* p_list );
@@ -187,6 +213,7 @@ void* List__get_first( List_t* p_list );
  * Return the data pointer from the last list element (TAIL). If the linked list is empty,
  *   this will return _NULL_.
  *
+ * @param p_list The target linked list.
  * @return The list's last data pointer. NULL on an empty or invalid linked list.
  */
 void* List__get_last( List_t* p_list );
@@ -195,6 +222,7 @@ void* List__get_last( List_t* p_list );
  * Return the data pointer from the selected list element. If the linked list is empty,
  *   or the index is not valid, this will return _NULL_.
  *
+ * @param p_list The target linked list.
  * @param index The 0-based index into the array to select.
  * @return The data pointer at the selected index, or NULL on an invalid index.
  */
@@ -205,6 +233,7 @@ void* List__get_at( List_t* p_list, size_t index );
  * Searches the linked list for the provided data pointer and returns its index if found.
  *   Returns -1 if the data pointer was not found in the list.
  *
+ * @param p_list The target linked list.
  * @param p_data The data pointer to search for in the list of nodes.
  * @return The index into the linked list where the first occurrence of the pointer is
  *   found. Returns _-1_ if the pointer was not found.
@@ -215,6 +244,7 @@ int List__index_of( List_t* p_list, void* p_data );
  * Searches the linked list for the final occurrence of the provided data pointer and
  *   returns its index if found. Returns -1 if the data pointer was not found in the list.
  *
+ * @param p_list The target linked list.
  * @param p_data The data pointer to search for in the list of nodes.
  * @return The index into the linked list where the last occurrence of the pointer is
  *   found. Returns _-1_ if the pointer was not found.
@@ -227,6 +257,7 @@ int List__last_index_of( List_t* p_list, void* p_data );
  *   a convenient way to use the linked list as a stack structure in tandem with the 'push'
  *   operation.
  *
+ * @param p_list The target linked list.
  * @return The data pointer of the popped list element. _NULL_ if the list has no elements
  *   to pop.
  */
@@ -237,6 +268,7 @@ void* List__pop( List_t* p_list );
  *   convenient way to use the linked list as a stack structure in tandem with the 'pop'
  *   operation.
  *
+ * @param p_list The target linked list.
  * @param p_data The data pointer to add as the new list HEAD pointer (first element).
  * @return The new list length on success, _-1_ on failure (such as an out-of-bounds error).
  */
@@ -247,6 +279,7 @@ int List__push( List_t* p_list, void* p_data );
  * Remove the first list node element from the list and returns its data pointer. If the
  *   list is empty, _NULL_ is returned instead.
  *
+ * @param p_list The target linked list.
  * @return The data pointer of the removed list element, or _NULL_ on error.
  */
 void* List__remove_first( List_t* p_list );
@@ -255,6 +288,7 @@ void* List__remove_first( List_t* p_list );
  * Remove the last list node element from the list and returns its data pointer. If the
  *   list is empty, _NULL_ is returned instead.
  *
+ * @param p_list The target linked list.
  * @return The data pointer of the removed list element, or _NULL_ on error.
  */
 void* List__remove_last( List_t* p_list );
@@ -263,6 +297,7 @@ void* List__remove_last( List_t* p_list );
  * Remove the selected list node element from the list and returns its data pointer. If
  *   the list is empty or if the selected index is invalid, _NULL_ is returned instead.
  *
+ * @param p_list The target linked list.
  * @param index The index of the node to remove from the list.
  * @return The data pointer of the removed list element, or _NULL_ on error.
  */
@@ -273,6 +308,7 @@ void* List__remove_at( List_t* p_list, size_t index );
  *   pointer. If the list is empty or if there is no occurrence of the provided data
  *   pointer, _NULL_ is returned.
  *
+ * @param p_list The target linked list.
  * @param p_data The data pointer to search for in the list.
  * @return The data pointer of the removed list node.
  */
@@ -283,6 +319,7 @@ void* List__remove_first_occurrence( List_t* p_list, void* p_data );
  *   pointer. If the list is empty or if there is no occurrence of the provided data
  *   pointer, _NULL_ is returned.
  *
+ * @param p_list The target linked list.
  * @param p_data The data pointer to search for in the list.
  * @return The data pointer of the removed list node.
  */
@@ -293,6 +330,7 @@ void* List__remove_last_occurrence( List_t* p_list, void* p_data );
  * Change the data pointer of the selected linked list node. If the index is out of
  *   bounds or if there's another error, _NULL_ is returned.
  *
+ * @param p_list The target linked list.
  * @param index The index to select from the linked list.
  * @param p_new_data The new data pointer for the selected linked list node.
  * @return The previous data pointer of the selected list node. _NULL_ on error.
@@ -303,6 +341,7 @@ void* List__set_at( List_t* p_list, size_t index, void* p_new_data );
 /**
  * Return the length of the linked list.
  *
+ * @param p_list The target linked list.
  * @return The length of the linked list.
  */
 size_t List__length( List_t* p_list );
@@ -310,6 +349,7 @@ size_t List__length( List_t* p_list );
 /**
  * Return the length of the linked list.
  *
+ * @param p_list The target linked list.
  * @return The length of the linked list.
  */
 size_t List__count( List_t* p_list );
@@ -323,6 +363,7 @@ size_t List__count( List_t* p_list );
  *   linked list. Therefore, if the list is destroyed, the array will still be preserved
  *   in its own memory on the heap until freed separately.
  *
+ * @param p_list The target linked list.
  * @param element_size The expected size of the underlying linked list type.
  * @return Pointer to the newly-allocated array on the heap. _NULL_ on error.
  */
