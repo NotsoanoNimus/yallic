@@ -6,7 +6,7 @@ The `yallic` design is heavily inspired by
 [Java's implementation](https://docs.oracle.com/javase/7/docs/api/java/util/LinkedList.html)
 (from JDK 7) of generic linked list types, with some other functions pepper in.
 
-See the [project documentation](https://xmit.xyz/yallic/index.html) for usage information,
+See the [project documentation](https://xmit.xyz/yallic/yallic_8h.html) for usage information,
 or just thumb through the `yallic.h` header file. This is quite a tiny and portable library.
 
 Pronounced as `y'all-ee-see` in your thickest American Southern twang.
