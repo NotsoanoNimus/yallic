@@ -687,7 +687,11 @@ void List__for_each(
     void    (*action)(void*, void*, void**),
     void    (*callback)(void*, void**)
 ) {
-    if (  NULL == p_list || (0 == List__length( p_list ))  )  return;
+    if (
+           NULL == p_list
+        || (0 == List__length( p_list ))
+        || NULL == action
+    )  return;
 
     ListNode_t* p_scroll = p_list->head;
     while ( NULL != p_scroll ) {
@@ -696,7 +700,9 @@ void List__for_each(
         p_scroll = p_scroll->next;
     }
 
-    (*callback)( p_input, pp_result );
+    if ( NULL != callback )
+        (*callback)( p_input, pp_result );
+
     return;
 }
 
@@ -752,6 +758,8 @@ static ListNode_t* __List__get_node_first_occurrence( List_t* p_list, void* p_da
     while ( NULL != p_node ) {
         if ( p_node->data == p_data )
             return p_node;
+
+        p_node = p_node->next;
     }
 
     return NULL;

@@ -148,6 +148,14 @@ Test( listops, foreach_arithmetic ) {
     cr_expect( 1 == p_iter->was_callbackd, "The callback for the struct did not issue properly" );
     cr_expect( 777 == p_res->stored, "Did not see a proper result struct storage" );
 
+    free( p_res );
+    p_res = (struct __test_res_t*)calloc( 1, sizeof(struct __test_res_t) );
+
+    List__for_each( p_test, (void**)&p_res, (void*)p_iter, &__test_action, NULL );
+
+    cr_expect( (4*List__length( p_test )) == p_res->add_result,
+        "The NULL callback on the for-each did not iterate properly" );
+
     free( p_iter ); free( p_res );
     List__delete_deep( p_test );
 }
