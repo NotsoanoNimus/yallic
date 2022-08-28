@@ -84,23 +84,27 @@ List_t* List__new( size_t max_size ) {
 
 
 // Shallow deletion of list elements and the list allocation itself.
-void List__delete_shallow( List_t* p_list ) {
-    if ( NULL == p_list )  return;
+void List__delete_shallow( List_t** pp_list ) {
+    if ( NULL == pp_list || NULL == *pp_list )  return;
 
-    List__clear_shallow( p_list );
+    List__clear_shallow( *pp_list );
 
-    free( p_list );
+    free( *pp_list );
+    *pp_list = NULL;
+
     return;
 }
 
 
 // Deeply delete all list nodes and the list pointer.
-void List__delete_deep( List_t* p_list ) {
-    if ( NULL == p_list )  return;
+void List__delete_deep( List_t** pp_list ) {
+    if ( NULL == pp_list || NULL == *pp_list )  return;
 
-    List__clear_deep( p_list );
+    List__clear_deep( *pp_list );
 
-    free( p_list );
+    free( *pp_list );
+    *pp_list = NULL;
+
     return;
 }
 
@@ -126,7 +130,7 @@ void List__reverse( List_t** pp_list ) {
     }
 
     // Shallow deletion of old structure.
-    List__delete_shallow( *pp_list );
+    List__delete_shallow( pp_list );
 
     // Set the passed pointer to the new list, effectively modifying it in-place (by ref).
     *pp_list = p_new;
@@ -171,6 +175,7 @@ void List__clear_shallow( List_t* p_list ) {
 void List__clear_deep( List_t* p_list ) {
     if (  List__length( p_list ) > 0  ) {
         ListNode_t* p_node = p_list->head;
+
         while ( NULL != p_node ) {
             // This is the only real difference between shallow and deep clears.
             if ( NULL != p_node->data )
@@ -348,7 +353,7 @@ List_t* List__clone( List_t* p_list ) {
     while ( NULL != p_scroll ) {
         if (  -1 == List__add( p_new, p_scroll->data )  ) {
             // If something goes wrong, revert the list changes and destroy the clone.
-            List__delete_shallow( p_new );
+            List__delete_shallow( &p_new );
             return NULL;
         }
 
@@ -372,7 +377,7 @@ List_t* List__slice( List_t* p_list, size_t from_index, size_t to_index ) {
     // From start to end of the slice, build up the new list sequentially.
     while ( p_start != p_end->next ) {
         if (  -1 == List__add( p_new, p_start->data )  ) {
-            List__delete_shallow( p_new );
+            List__delete_shallow( &p_new );
             return NULL;
         }
 
@@ -398,7 +403,7 @@ List_t* List__copy( List_t* p_list, size_t element_size ) {
         if (  -1 == List__add( p_new, p_new_data )  ) {
             // If something goes wrong, revert the list changes and nuke the copied data.
             free( p_new_data );
-            List__delete_deep( p_new );
+            List__delete_deep( &p_new );
             return NULL;
         }
 
@@ -508,14 +513,21 @@ void* List__remove_first( List_t* p_list ) {
 // Remove the final list item (TAIL) and return its data pointer.
 void* List__remove_last( List_t* p_list ) {
     ListNode_t* p_tail = __List__get_last_node( p_list );
-    if ( NULL == p_tail )  return NULL;
-
     ListNode_t* p_head = p_list->head;
-    while ( NULL != p_head ) {
-        if ( p_head->next == p_tail )
-            p_head->next = NULL;   //sever list chain before the last node, cutting it out
 
-        p_head = p_head->next;
+    if ( NULL == p_tail ) {
+        return NULL;
+    } else if ( p_tail == p_head ) {
+        p_list->head = NULL;
+    } else {
+        while ( NULL != p_head ) {
+            if ( p_head->next == p_tail ) {
+                p_head->next = NULL;   //sever list chain before the last node, cutting it out
+                break;
+            }
+
+            p_head = p_head->next;
+        }
     }
 
     // Save the data pointer, free the ListNode_t object, and return the old data pointer.
@@ -669,7 +681,7 @@ List_t* List__from_array(
 
         if (  NULL == p_new_element || -1 == List__add( p_list, p_new_element )  ) {
             if ( NULL != p_new_element )  free( p_new_element );
-            List__delete_deep( p_list );
+            List__delete_deep( &p_list );
             return NULL;
         }
     }
@@ -722,11 +734,12 @@ static ListNode_t* __List__get_last_node( List_t* p_list ) {
 
     ListNode_t* p_last = p_list->head;
     while ( NULL != p_last ) {
-        if ( NULL == p_last->next )  return p_last;
+        if ( NULL == p_last->next )
+            break;
         p_last = p_last->next;
     }
 
-    return NULL;
+    return p_last;
 }
 
 

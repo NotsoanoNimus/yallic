@@ -57,9 +57,9 @@ List_t* List__new( size_t max_size );
  *   method before invoking this function, or simply use the List__delete_deep() call
  *   if it's true that _all_ list data nodes are allocated/free-able heap blocks.
  *
- * @param p_list The target linked list.
+ * @param pp_list The address of the the pointer to the target linked list.
  */
-void List__delete_shallow( List_t* p_list );
+void List__delete_shallow( List_t** pp_list );
 
 /**
  * Deeply delete underlying list node data, list nodes, and destroy the list. This method
@@ -67,9 +67,9 @@ void List__delete_shallow( List_t* p_list );
  *   forcibly deallocate all list data regardless of what's allocated or given (unless the
  *   List_t pointer is NULL).
  *
- * @param p_list The target linked list.
+ * @param pp_list The address of the the pointer to the target linked list.
  */
-void List__delete_deep( List_t* p_list );
+void List__delete_deep( List_t** pp_list );
 
 /**
  * Reverse the order of a linked list object. This function takes a double-pointer since

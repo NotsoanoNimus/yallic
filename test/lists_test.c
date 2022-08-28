@@ -36,6 +36,83 @@ Test(dummytests, dummyequal) {
 }
 
 
+Test( listops, delete_deep ) {
+    List_t* p_test = __create_and_populate( 100 );
+
+    for ( size_t x = 0; x < 10; x++ )
+        List__remove_last( p_test );
+
+    cr_assert(  90 == List__length( p_test ), "List should be trimmed by 10 elements"  );
+
+    for ( size_t x = 0; x < 5; x++ ) {
+        void* p_x = calloc( 1, sizeof(unsigned char) );
+        List__add( p_test, p_x );
+    }
+
+    cr_assert(  95 == List__length( p_test ), "List should be trimmed by 10 elements"  );
+
+    List__delete_deep( &p_test );
+
+    cr_assert(  0 == List__length( p_test ), "List delete_deep should empty the list"  );
+}
+
+Test( listops, remove_last_to_end ) {
+    List_t* p_test = __create_and_populate( 3 );
+
+    for ( size_t x = 0; x < 3; x++ )
+        free(  List__remove_last( p_test )  );
+
+    cr_assert(  0 == List__length( p_test ), "List should be empty"  );
+
+    List__add( p_test, (void*)0x10 );
+    cr_assert(  (void*)0x10 == List__get_last( p_test ), "Last item should be 0x10"  );
+}
+
+Test( listops, pop ) {
+    List_t* p_test = __create_and_populate( 100 );
+    cr_assert(  100 == List__length( p_test ), "List should be populated"  );
+
+    free(  List__pop( p_test )  );
+    cr_assert(  99 == List__length( p_test ), "List pop should remove one element"  );
+
+    free(  List__remove_first( p_test )  );
+    cr_assert(  98 == List__length( p_test ), "List remove_first should remove one element"  );
+
+    List__delete_deep( &p_test );
+}
+
+Test( listops, add_remove_replace_reverse ) {
+    List_t* p_test = __create_and_populate( 100 );
+    free(  List__pop( p_test )  );
+    free(  List__pop( p_test )  );
+
+    List__add( p_test, (void*)0x1 );
+    List__add( p_test, (void*)0x2 );
+
+    List__remove_last( p_test );
+    cr_assert(  (void*)0x1 == List__get_last( p_test ),
+        "List remove_last should properly remove old items"  );
+
+    List__add( p_test, (void*)0x100 );
+    cr_assert(  (void*)0x100 == List__get_last( p_test ),
+        "List add should add onto a list dynamically"  );
+
+    List__pop( p_test );
+    List__pop( p_test );
+    List__push( p_test, (void*)0x32 );
+    List__push( p_test, (void*)0x30 );
+    cr_assert(  (void*)0x30 == List__get_first( p_test ),
+        "List push should add element onto list beginning"  );
+
+    List__reverse( &p_test );
+    cr_assert(  (void*)0x30 == List__get_last( p_test ),
+        "List reverse should place first element last"  );
+
+    List__remove_last( p_test );
+    cr_assert(  (void*)0x32 == List__get_last( p_test ),
+        "List remove_last should properly remove old items"  );
+}
+
 Test( listops, overflow_add ) {
     List_t* p_test = __create_and_populate( 100 );
 
@@ -52,7 +129,7 @@ Test( listops, overflow_add ) {
         "Trying to add at an index when at max_size should error"  );
     //free( p_idata );   //don't free here, deep deletion kills it
 
-    List__delete_deep( p_test );
+    List__delete_deep( &p_test );
 }
 Test( listops, overflow_push ) {
     List_t* p_test = __create_and_populate( 100 );
@@ -62,7 +139,7 @@ Test( listops, overflow_push ) {
     cr_expect( -1 == res, "Lists should not allow pushing beyond their max_size properties" );
 
     free( p_data );
-    List__delete_deep( p_test );
+    List__delete_deep( &p_test );
 }
 Test( listops, overflow_extend ) {
     List_t* p_t1 = __create_and_populate( 10 );
@@ -77,8 +154,8 @@ Test( listops, overflow_extend ) {
     cr_assert(  -1 != List__extend( p_t1, p_s1 ),
         "Linked list should be able to extend up to its limit"  );
 
-    List__delete_deep( p_t1 );
-    List__delete_deep( p_t2 );
+    List__delete_deep( &p_t1 );
+    List__delete_deep( &p_t2 );
 }
 
 
@@ -114,7 +191,7 @@ void __test_callback_print( void* p_input, void** pp_result ) {
 
 
 Test( listops, foreach_print ) {
-    List_t* p_test = __create_and_populate( 10 );
+    List_t* p_test = __create_and_populate( 5 );
 
     struct __test_res_t* p_res =
         (struct __test_res_t*)calloc( 1, sizeof(struct __test_res_t) );
@@ -124,8 +201,13 @@ Test( listops, foreach_print ) {
     printf( "FOR-EACH LOOP TESTING...\n" );
     List__for_each( p_test, (void**)&p_res, (void*)p_iter, &__test_action_print, &__test_callback_print );
 
+    p_iter->was_callbackd = 0;
+    List__reverse( &p_test );
+    printf( "[REVERSED] FOR-EACH LOOP TESTING...\n" );
+    List__for_each( p_test, (void**)&p_res, (void*)p_iter, &__test_action_print, &__test_callback_print );
+
     free( p_iter ); free( p_res );
-    List__delete_deep( p_test );
+    List__delete_deep( &p_test );
 }
 
 Test( listops, foreach_arithmetic ) {
@@ -157,7 +239,7 @@ Test( listops, foreach_arithmetic ) {
         "The NULL callback on the for-each did not iterate properly" );
 
     free( p_iter ); free( p_res );
-    List__delete_deep( p_test );
+    List__delete_deep( &p_test );
 }
 
 
@@ -173,7 +255,7 @@ Test( memory, properly_freed, .signal = SIGSEGV ) {
             "The list should be add-able" );
     }
 //    free( p_n );
-    List__delete_deep( p_n );
+    List__delete_deep( &p_n );
     printf(  "List size: |%lu|\n", List__length( p_n )  );
 }
 */
