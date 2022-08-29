@@ -146,9 +146,9 @@ int List__add( List_t* p_list, void* p_data );
 int List__add_at( List_t* p_list, void* p_data, size_t index );
 
 /**
- * Concatenate two lists in sequence. The source list is shallowly freed and destroyed
- *   if the operation is successful. If the list concatenation causes the destination
- *   list length to go out-of-bounds, the operation will fail and is reverted.
+ * Concatenate two lists in sequence. If the list concatenation causes the destination
+ *   list length to go out-of-bounds, the operation will fail and is reverted. The source
+ *   list is __not__ freed or otherwise altered in its structure or its data.
  *
  * @param p_list_dest The destination list onto which the source list is added.
  * @param p_list_src The list being added onto the destination list.
@@ -157,10 +157,21 @@ int List__add_at( List_t* p_list, void* p_data, size_t index );
 int List__extend( List_t* p_list_dest, List_t* p_list_src );
 
 /**
- * Insert a list into another linked list at the given destination index. The source
- *   list is shallowly freed and destroyed if the operation is successful. If the list
+ * Concatenate two lists in sequence. If the list concatenation causes the destination
+ *   list length to go out-of-bounds, the operation will fail and is reverted. The source
+ *   list is __shallowly freed__ upon success.
+ *
+ * @param p_list_dest The destination list onto which the source list is added.
+ * @param p_list_src The list being added onto the destination list.
+ * @return _-1_ on failure, or the new length of the destination list on success.
+ */
+int List__merge( List_t* p_list_dest, List_t* p_list_src );
+
+/**
+ * Insert a list into another linked list at the given destination index. If the list
  *   concatenation causes the destiation list length to go out-of-bounds, the operation
- *   will fail and is reverted.
+ *   will fail and is reverted. The source list is __not__ freed or otherwise altered
+ *   in its structure or its data.
  *
  * @param p_list_dest The destination list into which the source list is added.
  * @param p_list_src The list being added into the destination list.
@@ -168,6 +179,18 @@ int List__extend( List_t* p_list_dest, List_t* p_list_src );
  * @return _-1_ on failure, or the new length of the destination list on success.
  */
 int List__extend_at( List_t* p_list_dest, List_t* p_list_src, size_t index );
+
+/**
+ * Insert a list into another linked list at the given destination index. If the list
+ *   concatenation causes the destiation list length to go out-of-bounds, the operation
+ *   will fail and is reverted. The source list is __shallowly freed__ upon success.
+ *
+ * @param p_list_dest The destination list into which the source list is added.
+ * @param p_list_src The list being added into the destination list.
+ * @param index The index into the destination list at which to add the source list.
+ * @return _-1_ on failure, or the new length of the destination list on success.
+ */
+int List__merge_at( List_t* p_list_dest, List_t* p_list_src, size_t index );
 
 
 /**

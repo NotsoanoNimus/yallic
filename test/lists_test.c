@@ -6,6 +6,7 @@
  */
 
 #include "../src/yallic.h"
+#include "../src/yallic.c"
 #include <criterion/criterion.h>
 
 #include <time.h>
@@ -35,6 +36,25 @@ Test(dummytests, dummyequal) {
     cr_expect( 5 == i, "i should equal 5" );
 }
 
+
+
+Test( listops, extend ) {
+    List_t* p_t1 = __create_and_populate( 100 );
+    List__pop( p_t1 );
+    List__pop( p_t1 );
+    cr_assert(  98 == List__length( p_t1 ), "List t1 should be length 98"  );
+
+    List_t* p_t2 = List__new( 2 );
+    List__push( p_t2, (void*)0x20 );
+    List__push( p_t2, (void*)0x10 );
+    cr_assert(  2 == List__length( p_t2 ) && (void*)0x10 == List__get_first( p_t2 ),
+        "List elements should be in order"  );
+
+    cr_assert(  -1 != List__merge( p_t1, p_t2 ), "List should be able to extend"  );
+    cr_assert(  0 == List__length( p_t2 ), "Second source list should be shallowly empty"  );
+    cr_assert(  100 == List__length( p_t1 ), "First destination list should be 100 elements"  );
+    cr_assert(  (void*)0x20 == List__get_last( p_t1 ), "Final list should be in proper order"  );
+}
 
 Test( listops, delete_deep ) {
     List_t* p_test = __create_and_populate( 100 );
@@ -259,3 +279,61 @@ Test( memory, properly_freed, .signal = SIGSEGV ) {
     printf(  "List size: |%lu|\n", List__length( p_n )  );
 }
 */
+
+
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+// SPEED TESTS.
+
+Test( speed, clear__pop_vs_iter ) {
+    printf( "RUNNING TEST: clear__pop_vs_iter\n" );
+    size_t count = 20000;
+
+    List_t* p_t1 = List__new( count );
+    List_t* p_t2 = List__new( count );
+
+    printf( "\tPopulating each test list with '%lu' items.\n", count );
+    for ( size_t x = 0; x < count; x++ ) {
+        ListNode_t* p_n1 = (ListNode_t*)calloc( 1, sizeof(ListNode_t) );
+        p_n1->data = (void*)0x01;
+        p_n1->next = p_t1->head;
+        p_t1->head = p_n1;
+
+        ListNode_t* p_n2 = (ListNode_t*)calloc( 1, sizeof(ListNode_t) );
+        p_n2->data = (void*)0x02;
+        p_n2->next = p_t2->head;
+        p_t2->head = p_n2;
+    }
+    printf( "\tL1 |%lu| /// L2 |%lu|\n\tClearing lists...\n\n",
+        List__length(p_t1), List__length(p_t2) );
+
+    cr_expect(  count == List__length( p_t1 ), "List 1 should be full"  );
+    clock_t pop_begin = clock();
+    size_t x1 = 0;
+    while ( NULL != p_t1->head ) {
+        List__pop( p_t1 );
+        x1++;
+    }
+    clock_t pop_end = clock();
+    cr_expect(  0 == List__length( p_t1 ), "List 1 should be empty"  );
+    double time_spent1 = (double)(pop_end - pop_begin) / CLOCKS_PER_SEC;
+    printf( "\tList cleared by POP(%lu): |%f|\n", x1, time_spent1 );
+
+    cr_expect(  count == List__length( p_t2 ), "List 2 should be full"  );
+    clock_t iter_begin = clock();
+    ListNode_t* p_node2 = p_t2->head;
+    size_t x2 = 0;
+    while ( NULL != p_node2 ) {
+        ListNode_t* p_shadow = p_node2->next;
+        free( p_node2 );
+        p_node2 = p_shadow;
+        x2++;
+    }
+    p_t2->head = NULL;
+    clock_t iter_end = clock();
+    cr_expect(  0 == List__length( p_t2 ), "List 2 should be empty"  );
+    double time_spent2 = (double)(iter_end - iter_begin) / CLOCKS_PER_SEC;
+    printf( "\tList cleared by ITER(%lu): |%f|\n", x2, time_spent2 );
+}

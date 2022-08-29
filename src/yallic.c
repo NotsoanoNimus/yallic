@@ -160,31 +160,34 @@ size_t List__get_max_size( List_t* p_list ) {
 
 // Shallowly delete a linked list structure, but not the underlying resources.
 void List__clear_shallow( List_t* p_list ) {
-    if (  List__length( p_list ) > 0  ) {
-        ListNode_t* p_node = p_list->head;
-        while ( NULL != p_node ) {
-            ListNode_t* p_node_shadow = p_node->next;
-            free( p_node );
-            p_node = p_node_shadow;
-        }
+    if ( NULL == p_list )  return;
+    ListNode_t* p_node = p_list->head;
+
+    while ( NULL != p_node ) {
+//    while ( NULL != p_list->head ) {
+//        List__pop( p_list );
+        ListNode_t* p_node_shadow = p_node->next;
+        free( p_node );
+        p_node = p_node_shadow;
     }
+
+    p_list->head = NULL;
 }
 
 
 // Deeply free all held list resources.
 void List__clear_deep( List_t* p_list ) {
-    if (  List__length( p_list ) > 0  ) {
-        ListNode_t* p_node = p_list->head;
+    if ( NULL == p_list )  return;
+    ListNode_t* p_node = p_list->head;
 
-        while ( NULL != p_node ) {
-            // This is the only real difference between shallow and deep clears.
-            if ( NULL != p_node->data )
-                free( p_node->data );
+    while ( NULL != p_node ) {
+        // This is the only real difference between shallow and deep clears.
+        if ( NULL != p_node->data )
+        free( p_node->data );
 
-            ListNode_t* p_node_shadow = p_node->next;
-            free( p_node );
-            p_node = p_node_shadow;
-        }
+        ListNode_t* p_node_shadow = p_node->next;
+        free( p_node );
+        p_node = p_node_shadow;
     }
 }
 
@@ -266,20 +269,16 @@ int List__extend( List_t* p_list_dest, List_t* p_list_src ) {
 
     // Get destination list tail.
     ListNode_t* p_tail = __List__get_last_node( p_list_dest );
-    ListNode_t* p_tail_scroll = p_tail;
-    if ( NULL == p_tail )  return -1;
+    if ( NULL == p_tail )
+        p_tail = p_list_dest->head;
 
     // Append elements.
     ListNode_t* p_src_scroll = p_list_src->head;
     while ( NULL != p_src_scroll ) {
-        ListNode_t* p_new_node = LIST_NODE_INITIALIZER;
-        p_new_node->data = p_src_scroll->data;
+        // Add the data pointer. If adding fails, revert all added elements and return a failure.
+        if (  -1 == List__add( p_list_dest, p_src_scroll->data )  ) {
+            ListNode_t* p_tail_scroll = p_tail;   //back to original dest tail
 
-        // If adding fails, revert all added elements and return a failure.
-        if ( -1 == List__add( p_list_dest, p_new_node )  ) {
-            free( p_new_node );
-
-            p_tail_scroll = p_tail;
             while ( NULL != p_tail_scroll ) {
                 ListNode_t* p_tail_shadow = p_tail_scroll->next;   //save next lnode ptr
                 free( p_tail_scroll );   //free lnode
@@ -290,19 +289,23 @@ int List__extend( List_t* p_list_dest, List_t* p_list_src ) {
             return -1;
         }
 
-        // Extend the list by setting the current tail's next to the new node, then moving to it.
-        p_tail_scroll->next = p_new_node;
-        p_tail_scroll = p_new_node;
-
         // Advance to the next item in the source list.
         p_src_scroll = p_src_scroll->next;
     }
 
-    // Ensure the final tail node points to NULL as an enforcement.
-    p_tail_scroll->next = NULL;
-
     // Return new destination linked list length.
     return List__length( p_list_dest );
+}
+
+
+// Extend the destination list and shallowly free the source.
+int List__merge( List_t* p_list_dest, List_t* p_list_src ) {
+    int ext_res = List__extend( p_list_dest, p_list_src );
+
+    if ( -1 != ext_res )
+        List__clear_shallow( p_list_src );
+
+    return ext_res;
 }
 
 
@@ -340,6 +343,17 @@ int List__extend_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
 
     // Return new destination linked list length.
     return List__length( p_list_dest );
+}
+
+
+// Extend the destination list at the chosen index and shallowly free the source.
+int List__merge_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
+    int ext_res = List__extend_at( p_list_dest, p_list_src, index );
+
+    if ( -1 != ext_res )
+        List__clear_shallow( p_list_src );
+
+    return ext_res;
 }
 
 
