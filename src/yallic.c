@@ -164,8 +164,6 @@ void List__clear_shallow( List_t* p_list ) {
     ListNode_t* p_node = p_list->head;
 
     while ( NULL != p_node ) {
-//    while ( NULL != p_list->head ) {
-//        List__pop( p_list );
         ListNode_t* p_node_shadow = p_node->next;
         free( p_node );
         p_node = p_node_shadow;
@@ -183,12 +181,14 @@ void List__clear_deep( List_t* p_list ) {
     while ( NULL != p_node ) {
         // This is the only real difference between shallow and deep clears.
         if ( NULL != p_node->data )
-        free( p_node->data );
+            free( p_node->data );
 
         ListNode_t* p_node_shadow = p_node->next;
         free( p_node );
         p_node = p_node_shadow;
     }
+
+    p_list->head = NULL;
 }
 
 

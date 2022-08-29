@@ -55,7 +55,9 @@ List_t* List__new( size_t max_size );
  *   the list is greater than 0--then this function will attempt a shallow clear on
  *   the list. <br />__To prevent memory leaks__, use the `List__clean_deep( List_t* p_list )`
  *   method before invoking this function, or simply use the List__delete_deep() call
- *   if it's true that _all_ list data nodes are allocated/free-able heap blocks.
+ *   if it's true that _all_ list data nodes are allocated/free-able heap blocks.<br />It
+ *   also uses a double-pointer to automatically set the list reference to NULL so a
+ *   dangling pointer isn't referenced later.
  *
  * @param pp_list The address of the the pointer to the target linked list.
  */
@@ -65,7 +67,8 @@ void List__delete_shallow( List_t** pp_list );
  * Deeply delete underlying list node data, list nodes, and destroy the list. This method
  *   assumes the caller ran it explicitly and intentionally, and therefore tries to
  *   forcibly deallocate all list data regardless of what's allocated or given (unless the
- *   List_t pointer is NULL).
+ *   List_t pointer is NULL).<br />It also uses a double-pointer to automatically set the
+ *   list reference to NULL so a dangling pointer isn't referenced later.
  *
  * @param pp_list The address of the the pointer to the target linked list.
  */
