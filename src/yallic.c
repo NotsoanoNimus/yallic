@@ -268,12 +268,19 @@ int List__extend( List_t* p_list_dest, List_t* p_list_src ) {
         return List__length( p_list_dest );
 
     // Get destination list tail.
+    ListNode_t* p_src_scroll = p_list_src->head;
     ListNode_t* p_tail = __List__get_last_node( p_list_dest );
-    if ( NULL == p_tail )
+
+    // If the dest list is empty, enter the first node from src (since we know len > 0)
+    //   and increment by 1.
+    if ( NULL == p_tail ) {
+        if (  -1 == List__push( p_list_dest, p_list_src->head->data )  )  return -1;
+
+        p_src_scroll = p_src_scroll->next;
         p_tail = p_list_dest->head;
+    }
 
     // Append elements.
-    ListNode_t* p_src_scroll = p_list_src->head;
     while ( NULL != p_src_scroll ) {
         // Add the data pointer. If adding fails, revert all added elements and return a failure.
         if (  -1 == List__add( p_list_dest, p_src_scroll->data )  ) {
@@ -321,13 +328,26 @@ int List__extend_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
     if (  NULL == p_list_src || 0 == List__length( p_list_src )  )
         return List__length( p_list_dest );
 
-    // Get the preceding list node.
-    ListNode_t* p_node_before = __List__get_node_at( p_list_dest, (index-1) );
-    ListNode_t* p_before_link_save = p_node_before->next;   // preserve the old 'next' in case trouble
-    if ( NULL == p_node_before )  return -1;
+    // Knock out preliminary situations that are simple to handle.
+    if (  (List__length(p_list_dest)-1) == index || 0 == List__length( p_list_dest )  )
+        return List__extend( p_list_dest, p_list_src );
 
-    // Append the list.
+    // Save some markers.
     ListNode_t* p_scroll = p_list_src->head;
+    ListNode_t* p_node_before = NULL;
+    ListNode_t* p_node_after = __List__get_node_at( p_list_dest, index );
+
+    if ( 0 == index ) {
+        // Push the first node of the incoming list onto the head of the destination
+        if (  -1 == List__push( p_list_dest, p_list_src->head->data )  )  return -1;
+        p_list_dest->head->next = NULL;   //prepare it as a temporary tail
+
+        p_node_before = p_list_dest->head;
+        p_scroll = p_scroll->next;   //advance by 1
+    } else {
+        p_node_before = __List__get_node_at( p_list_dest, (index-1) );
+    }
+
     while ( NULL != p_scroll ) {
         // Create and add the new node.
         ListNode_t* p_new_node = LIST_NODE_INITIALIZER;
@@ -335,9 +355,11 @@ int List__extend_at( List_t* p_list_dest, List_t* p_list_src, size_t index ) {
 
         // If the list being copied is about to end (tail), restore the save point as the 'next' ptr.
         //   This should re-establish the linked list chain properly.
-        p_new_node->next = (NULL == p_scroll->next) ? p_before_link_save : NULL;
+        p_new_node->next = (NULL == p_scroll->next) ? p_node_after : NULL;
 
         p_node_before->next = p_new_node;
+
+        p_node_before = p_node_before->next;   //this is always following prev node
         p_scroll = p_scroll->next;
     }
 

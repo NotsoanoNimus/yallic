@@ -87,9 +87,9 @@ List__delete_shallow( p_linkedlist );
 
 ## Compiling & Installing
 
-It's intended to be as simple as `make; make install` if you intend to use the library in multiple
-different projects. This will place the _static library_ in `/usr/local/lib/` and the header file
-in `/usr/local/include/`.
+It's intended to be as simple as `make release; make install` if you intend to use the library in
+multiple different projects. This will place the _static library_ in `/usr/local/lib/` and the
+header file in `/usr/local/include/`.
 
 If you only want to compile the _static library_ for linkage in a single project, just `make` and
 use the `src/yallic.h` and `lib/libyallic.a` as you wish in the target projects.
