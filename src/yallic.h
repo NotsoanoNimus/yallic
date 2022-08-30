@@ -29,6 +29,7 @@
  */
 
 #include <stddef.h>
+#include <stdbool.h>
 
 
 
@@ -240,10 +241,17 @@ List_t* List__copy( List_t* p_list, size_t element_size );
  *
  * @param p_list The target linked list.
  * @param p_data The object/reference to seek inside the linked list.
- * @return _-1_ if the value is not found in the list, the index of the first occurrence
- *   on success.
+ * @return _0_ if the value is not found in the list, _1_ on success.
  */
-int List__contains( List_t* p_list, void* p_data );
+bool List__contains( List_t* p_list, void* p_data );
+
+/**
+ * Returns whether a linked list is empty or not.
+ *
+ * @param p_list The target linked list.
+ * @return _0_ if the list contains one or more elements; _1_ if the list is empty.
+ */
+bool List__is_empty( List_t* p_list );
 
 
 /**

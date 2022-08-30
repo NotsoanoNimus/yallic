@@ -381,7 +381,8 @@ TEST_LISTOPS( deep_copy_and_clone,
     cr_assert(  5 == List__length( p1 ), "List p1 should be populated"  );
 
     List_t* p1_copy = List__copy( p1, sizeof(int) );
-    cr_assert(  5 == List__length( p1_copy ), "List p1 should be copied properly"  );
+    cr_assert(  5 == List__length( p1_copy ),
+        "List p1 should be copied properly; got (%lu/5)", List__length( p1_copy )  );
 
     List__delete_deep( &p1 );
     cr_expect(  NULL == p1 && 0 == List__length( p1 ),
@@ -395,7 +396,7 @@ TEST_LISTOPS( deep_copy_and_clone,
             "List p1_copy should be ordered properly with separate pointers but same underlying value"  );
         // The clone should have the same data pointers as its source array.
         cr_assert(  List__get_at( p1_copy, x ) == List__get_at( p1_clone, x ),
-            "Underlying clone pointers must match the parent list"  );
+            "Underlying clone pointers must match the parent list, mismatched at '%lu'", x  );
     }
 
     List__delete_shallow( &p1_copy );
@@ -452,10 +453,10 @@ TEST_LISTOPS( contains,
     cr_assert(  -1 != List__push( p_test, d1 ), "List should be growable"  );
     cr_assert(  -1 != List__add( p_test, d2 ), "List should be growable"  );
 
-    cr_assert(  List__contains( p_test, d1 ) > -1, "List should contain pointer d1"  );
-    cr_assert(  List__contains( p_test, d2 ) > -1, "List should contain pointer d2"  );
+    cr_assert(  List__contains( p_test, d1 ) > 0, "List should contain pointer d1"  );
+    cr_assert(  List__contains( p_test, d2 ) > 0, "List should contain pointer d2"  );
 
-    cr_assert(  -1 == List__contains( p_test, d3 ), "List should not contain d3"  );
+    cr_assert(  0 == List__contains( p_test, d3 ), "List should not contain d3"  );
     free( d3 );
 );
 
@@ -576,39 +577,110 @@ TEST_LISTOPS( foreach_arithmetic,
 ///////////////////////////////////////////////////////////////////
 // SPEED TESTS.
 
-Test( speed, clear__pop_vs_iter ) {
+
+
+static inline List_t* __test__List__clone_forloop( List_t* p_list ) {
+    size_t len = List__length( p_list );
+    if ( NULL == p_list || 0 == len )  return NULL;
+
+    List_t* p_new = List__new( p_list->max_size );
+
+    p_new->head = LIST_NODE_INITIALIZER;
+    p_new->head->data = p_list->head->data;
+
+    ListNode_t* p_scroll = p_new->head;
+
+    // Construct blank list nodes to start.
+    for ( size_t x = 1; x < len; x++ ) {
+        ListNode_t* p_new_node = LIST_NODE_INITIALIZER;
+
+        p_scroll->next = p_new_node;
+        p_scroll = p_new_node;
+    }
+
+    // Loop again and fill out the data.
+    p_scroll = p_new->head->next;
+    ListNode_t* p_src_scroll = p_list->head->next;
+
+    for ( size_t x = 1; x < len; x++ ) {
+        p_scroll->data = p_src_scroll->data;
+
+        p_scroll = p_scroll->next;
+        p_src_scroll = p_src_scroll->next;
+    }
+
+    // Return the new List_t shallow clone.
+    return p_new;
+}
+static inline List_t* __test__List__clone_addcall( List_t* p_list ) {
+    size_t len = List__length( p_list );
+    if ( NULL == p_list || 0 == len )  return NULL;
+
+    List_t* p_new = List__new( p_list->max_size );
+    ListNode_t* p_scroll = p_list->head;
+
+    while ( NULL != p_scroll ) {
+        if (  -1 == List__add( p_new, p_scroll->data )  ) {
+            // If something goes wrong, revert the list changes and destroy the clone.
+            List__delete_shallow( &p_new );
+            return NULL;
+        }
+
+        p_scroll = p_scroll->next;
+    }
+
+    return p_new;
+}
+
+Test( speed_a, clone__for_vs_add ) {
+    printf( "RUNNING TEST: clone__for_vs_add\n" );
+    size_t count = 20000;
+
+    printf( "\tPopulating lists.\n" );
+    List_t* p_t1 = __create_and_populate( count );
+    List_t* p_t2 = __create_and_populate( count );
+
+    printf( "\tCloning lists.\n" );
+    cr_assert(  count == List__length( p_t1 ), "List t1 must be populated"  );
+    clock_t for_start = clock();
+    List_t* p_t1a = __test__List__clone_forloop( p_t1 );
+    clock_t for_end = clock();
+    double time_spent1 = (double)(for_end - for_start) / CLOCKS_PER_SEC;
+    printf( "\t\tList t1 cloned by FOR in '%f' seconds.\n", time_spent1 );
+
+    cr_assert(  count == List__length( p_t2 ), "List t2 must be populated"  );
+    clock_t add_start = clock();
+    List_t* p_t2a = __test__List__clone_addcall( p_t2 );
+    clock_t add_end = clock();
+    double time_spent2 = (double)(add_end - add_start) / CLOCKS_PER_SEC;
+    printf( "\t\tList t2 cloned by ADD in '%f' seconds.\n", time_spent2 );
+
+    free( p_t1a );
+    free( p_t2a );
+    List__delete_deep( &p_t1 );
+    List__delete_deep( &p_t2 );
+}
+
+
+
+Test( speed_b, clear__pop_vs_iter ) {
     printf( "RUNNING TEST: clear__pop_vs_iter\n" );
     size_t count = 20000;
 
-    List_t* p_t1 = List__new( count );
-    List_t* p_t2 = List__new( count );
+    List_t* p_t1 = __create_and_populate( count );
+    List_t* p_t2 = __create_and_populate( count );
 
-    printf( "\tPopulating each test list with '%lu' items.\n", count );
-    for ( size_t x = 0; x < count; x++ ) {
-        ListNode_t* p_n1 = (ListNode_t*)calloc( 1, sizeof(ListNode_t) );
-        p_n1->data = (void*)0x01;
-        p_n1->next = p_t1->head;
-        p_t1->head = p_n1;
-
-        ListNode_t* p_n2 = (ListNode_t*)calloc( 1, sizeof(ListNode_t) );
-        p_n2->data = (void*)0x02;
-        p_n2->next = p_t2->head;
-        p_t2->head = p_n2;
-    }
-    printf( "\tL1 |%lu| /// L2 |%lu|\n\tClearing lists...\n\n",
-        List__length(p_t1), List__length(p_t2) );
-
+    printf( "\tClearing lists...\n" );
     cr_expect(  count == List__length( p_t1 ), "List 1 should be full"  );
     clock_t pop_begin = clock();
     size_t x1 = 0;
-    while ( NULL != p_t1->head ) {
-        List__pop( p_t1 );
+    while (  NULL != List__pop( p_t1 )  ) {
         x1++;
     }
     clock_t pop_end = clock();
     cr_expect(  0 == List__length( p_t1 ), "List 1 should be empty"  );
     double time_spent1 = (double)(pop_end - pop_begin) / CLOCKS_PER_SEC;
-    printf( "\tList cleared by POP(%lu): |%f|\n", x1, time_spent1 );
+    printf( "\t\tList cleared by POP(%lu): |%f|\n", x1, time_spent1 );
 
     cr_expect(  count == List__length( p_t2 ), "List 2 should be full"  );
     clock_t iter_begin = clock();
@@ -624,5 +696,8 @@ Test( speed, clear__pop_vs_iter ) {
     clock_t iter_end = clock();
     cr_expect(  0 == List__length( p_t2 ), "List 2 should be empty"  );
     double time_spent2 = (double)(iter_end - iter_begin) / CLOCKS_PER_SEC;
-    printf( "\tList cleared by ITER(%lu): |%f|\n", x2, time_spent2 );
+    printf( "\t\tList cleared by ITER(%lu): |%f|\n", x2, time_spent2 );
+
+    List__delete_deep( &p_t1 );
+    List__delete_deep( &p_t2 );
 }
