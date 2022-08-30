@@ -400,6 +400,14 @@ size_t List__length( List_t* p_list );
  */
 size_t List__count( List_t* p_list );
 
+/**
+ * Return the length of the linked list.
+ *
+ * @param p_list The target linked list.
+ * @return The length of the linked list.
+ */
+size_t List__size( List_t* p_list );
+
 
 /**
  * Convert the linked list to a type-agnostic, linear memory space. This simply scrolls

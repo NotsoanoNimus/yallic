@@ -657,6 +657,12 @@ size_t List__count( List_t* p_list ) {
 }
 
 
+// Wrapper/Alias function.
+size_t List__size( List_t* p_list ) {
+    return List__length( p_list );
+}
+
+
 // Copy all linked list elements to a contiguous chunk of memory. NULL on error.
 void* List__to_array( List_t* p_list, size_t element_size ) {
     if (
