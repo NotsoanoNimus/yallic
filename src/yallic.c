@@ -558,7 +558,7 @@ int List__last_index_of( List_t* p_list, void* p_data ) {
 // Pop off the current first element (HEAD) of the linked list, free the
 //    node (NOT the data), and return its data pointer.
 void* List__pop( List_t* p_list ) {
-    if (  0 == List__length( p_list )  )
+    if (  NULL == p_list || NULL == p_list->head  )
         return NULL;
 
     // Save head node information.
@@ -819,7 +819,8 @@ void List__for_each(
     void    (*callback)(void*, void**)
 ) {
     if (
-           0 == List__length( p_list )
+           NULL == p_list
+        || NULL == p_list->head
         || NULL == action
     )  return;
 
@@ -877,13 +878,11 @@ static ListNode_t* __List__get_node_at( List_t* p_list, size_t index ) {
 // Fetch the first occurrence of the node with the given data pointer.
 //   NULL on error condition or pointer not found.
 static ListNode_t* __List__get_node_first_occurrence( List_t* p_list, void* p_data ) {
-    if (
-           NULL == p_list
-        || NULL == p_data
-        || (0 == List__length( p_list ))
-    )  return NULL;
+    if ( NULL == p_list || NULL == p_data )
+        return NULL;
 
     ListNode_t* p_node = p_list->head;
+
     while ( NULL != p_node ) {
         if ( p_node->data == p_data )
             return p_node;
@@ -898,11 +897,8 @@ static ListNode_t* __List__get_node_first_occurrence( List_t* p_list, void* p_da
 // Fetch the last occurrence of the node with the given data pointer.
 //   NULL on error condition or pointer not found.
 static ListNode_t* __List__get_node_last_occurrence( List_t* p_list, void* p_data ) {
-    if (
-           NULL == p_list
-        || NULL == p_data
-        || (0 == List__length( p_list ))
-    )  return NULL;
+    if ( NULL == p_list || NULL == p_data )
+        return NULL;
 
     ListNode_t* p_node = p_list->head;
     ListNode_t* p_node_shadow = NULL;
