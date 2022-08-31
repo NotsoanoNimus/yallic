@@ -427,9 +427,10 @@ size_t List__size( List_t* p_list );
  *
  * @param p_list The target linked list.
  * @param element_size The expected size of the underlying linked list type.
+ * @param extra_bytes Amount of extra bytes to add onto the calloc memory allocation.
  * @return Pointer to the newly-allocated array on the heap. _NULL_ on error.
  */
-void* List__to_array( List_t* p_list, size_t element_size );
+void* List__to_array( List_t* p_list, size_t element_size, size_t extra_bytes );
 
 /**
  * Convert an array of data to a linked list. This linearly iterates all memory in the source

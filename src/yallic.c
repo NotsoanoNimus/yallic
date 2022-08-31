@@ -724,7 +724,7 @@ size_t List__size( List_t* p_list ) {
 
 
 // Copy all linked list elements to a contiguous chunk of memory. NULL on error.
-void* List__to_array( List_t* p_list, size_t element_size ) {
+void* List__to_array( List_t* p_list, size_t element_size, size_t extra_bytes ) {
     // Calculate the necessary space.
     size_t len = List__length( p_list );
     size_t dest_size = (len * element_size);
@@ -733,7 +733,7 @@ void* List__to_array( List_t* p_list, size_t element_size ) {
         return NULL;
 
     // Allocate the array space.
-    void* const p_dest = calloc( 1, dest_size );
+    void* const p_dest = calloc( 1, (dest_size + extra_bytes) );
     if ( NULL == p_dest )
         return NULL;
 
@@ -791,10 +791,10 @@ List_t* List__from_array(
             return NULL;
         }
 
-        p_tmp = LIST_NODE_INITIALIZER;
-
         memcpy( p_new_element, (p_array+(walk*element_size)), element_size );
         p_scroll->data = p_new_element;
+
+        p_tmp = LIST_NODE_INITIALIZER;
         p_scroll->next = p_tmp;
 
         p_scroll_prev = p_scroll;
