@@ -1,10 +1,10 @@
 # yallic - Yet Another Linked List Implementation in C
 
-No dependencies, no problems. Simple, maintainable, flexible, extensible, and ready to use.
+No dependencies, no problems. Simple, flexible, extensible, and ready to use.
 
 The `yallic` design is heavily inspired by
 [Java's implementation](https://docs.oracle.com/javase/7/docs/api/java/util/LinkedList.html)
-(from JDK 7) of generic linked list types, with some other functions pepper in.
+(from JDK 7) of generic linked list types, with some other functions peppered in.
 
 See the [project documentation](https://xmit.xyz/yallic/yallic_8h.html) for usage information,
 or just thumb through the `yallic.h` header file. This is quite a tiny and portable library.
@@ -15,7 +15,7 @@ Another one out in the wild can't hurt, _right_?
 
 ## Features
 
-- [X] Simple, flexible, extensible`(, [xyz]ible)*`.
+- [X] Simple, flexible, extensible`(, (.+)ible)*`.
 - [X] Generic.
 - [X] Well-documented.
 - [X] Intuitive (I hope).
@@ -37,7 +37,9 @@ The project can act as a great beginner's guide to linked list operation and des
 
 ## Usage
 
-Using the library is fairly straightforward for most simple operations:
+Using the library is fairly straightforward for most operations.
+
+To use a rather pointless scenario:
 ```c
 #include <yallic.h>
 
@@ -80,16 +82,27 @@ for ( size_t x = 0; x < CALLS; x++ ) {
 }
 
 // Discard the list and (shallowly) free all list nodes (but not underlying ptrs).
-List__delete_shallow( p_linkedlist );
+List__delete_shallow( &p_linkedlist );
 
 // [...]
 ```
+
+
+## Unit Testing
+
+`yallic` is written with a considerably large unit-test file that integrates the Criterion testing
+framework to make set-up, tear-down, and results displays easy to write and maintain.
+
+If you're interested in more usage examples for the library that go beyond the Doxygen docs, just
+open the test file and poke around!
+
 
 ## Compiling & Installing
 
 It's intended to be as simple as `make release; make install` if you intend to use the library in
 multiple different projects. This will place the _static library_ in `/usr/local/lib/` and the
-header file in `/usr/local/include/`.
+header file in `/usr/local/include/`. You can then include the `<yallic.h>` header and link with the
+`-lyallic` flag to bring everything together in your project.
 
 If you only want to compile the _static library_ for linkage in a single project, just `make` and
 use the `src/yallic.h` and `lib/libyallic.a` as you wish in the target projects.
@@ -97,10 +110,14 @@ use the `src/yallic.h` and `lib/libyallic.a` as you wish in the target projects.
 
 ## Minutiae
 
-- Yes, I am aware that `List` is technically different from a `LinkedList` -- however, I've chosen
-to keep the function names as they are using the `List__` prefix. If someone is using this project
+- The linked lists used in this project are _forward-only_, meaning they are singly linked in a node
+chain going from the `head` node to where the `->next` pointer is `NULL`. As of right now, the list
+does not have reverse (or "previous") pointers attached to each node, but it may be added in the future
+to potentially improve speeds.
+- I am aware that a `List` is technically different from a `LinkedList` -- however, I've chosen
+to keep the function names as they are using the `List__` prefix for brevity. If someone is using this project
 with the intent to have dynamically-sized lists, I don't think the distinction will be necessary,
 and it's really just pedantic at that point.
-- I do plan to maintain and update the project and its documentation as I need to. Though I do
-foresee this being a set-and-forget repository: if I haven't updated in a long time, rest assured
-the project will still work at the very least just as well as it did when I initially wrote it.
+- I do plan to maintain and update the project and its documentation as I need to. Though I foresee
+this being a set-and-forget repository: if I haven't updated in a long time, rest assured the project
+will still work at the very least just as well as it did when I initially wrote it.
