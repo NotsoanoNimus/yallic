@@ -572,10 +572,64 @@ TEST_LISTOPS( foreach_arithmetic,
 
 
 
+TEST_LISTOPS( list_to_array,
+    for ( size_t x = 0; x < 5; x++ )
+        free(  List__pop( p_test )  );
+
+    for ( size_t x = 5; x < 30; x += 5 ) {
+        int* p_x = (int*)calloc( 1, sizeof(int) );
+        *p_x = x;
+        cr_assert(  -1 != List__add_at( p_test, p_x, x ), "List should be growable"  );
+    }
+    cr_expect(  100 == List__length( p_test ),
+        "List should be 100 elements but got '%lu'", List__length( p_test )  );
+
+    void* p = List__to_array( p_test, sizeof(int), 0 );
+    cr_assert(  NULL != p, "List conversion to an array failed"  );
+
+    for ( size_t x = 5; x < 30; x += 5 ) {
+        int val = *((int*)(p+(x*sizeof(int))));
+        cr_assert(  (int)x == val, "Array value at index '%lu' should "
+            "be '%d' but got '%d'", x, x, val  );
+    }
+
+    free( p );
+);
+
+TEST_LISTOPS( array_to_list,
+    void* p_arr = (void*)calloc( 10, sizeof(int) );
+
+    for ( size_t x = 0; x < 10; x++ ) {
+        int* p_x = (int*)(p_arr+(x*sizeof(int)));
+        *p_x = x*10;
+    }
+
+    List_t* p_new = List__from_array( p_arr, sizeof(int), 10, 11 );
+    cr_assert(  10 == List__length( p_new ), "List did not generate properly"  );
+
+    void* p_i = calloc( 1, sizeof(int) );
+    cr_assert(  -1 != List__add( p_new, p_i ), "List did not accept a new element"  );
+
+    p_i = calloc( 1, sizeof(int) );
+    cr_assert(  -1 == List__add( p_new, p_i ), "List accepted a new element when it shouldn't"  );
+
+    for ( size_t x = 0; x < 10; x++ )
+        cr_assert(  (x*10) == *((int*)(List__get_at( p_new, x ))),
+            "List is not organized properly (%lu)", x  );
+
+    free( p_i );
+    free( p_arr );
+    List__delete_deep( &p_new );
+);
+
+
+
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // SPEED TESTS.
+
+TestSuite( speed, .disabled = true );
 
 
 
@@ -632,7 +686,7 @@ static inline List_t* __test__List__clone_addcall( List_t* p_list ) {
     return p_new;
 }
 
-Test( speed_a, clone__for_vs_add ) {
+Test( speed, clone__for_vs_add ) {
     printf( "RUNNING TEST: clone__for_vs_add\n" );
     size_t count = 20000;
 
@@ -663,7 +717,7 @@ Test( speed_a, clone__for_vs_add ) {
 
 
 
-Test( speed_b, clear__pop_vs_iter ) {
+Test( speed, clear__pop_vs_iter ) {
     printf( "RUNNING TEST: clear__pop_vs_iter\n" );
     size_t count = 20000;
 
