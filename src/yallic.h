@@ -4,7 +4,7 @@
 /**
  * @file yallic.h
  *
- * @author Suriel (Zachary) Puhl
+ * @author Zachary Puhl
  * @date August 2022
  * @version 1.0
  *

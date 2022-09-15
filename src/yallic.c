@@ -1,6 +1,6 @@
 /**
  * @file yallic.c
- * @author Suriel (Zachary) Puhl
+ * @author Zachary Puhl
  * @date August 2022
  *
  * Yet Another Linked list Implementation in C.
@@ -72,7 +72,7 @@ static size_t __List__index_of_node( List_t* p_list, ListNode_t* p_node );
 
 // Create a new linked list.
 List_t* List__new( size_t max_size ) {
-    if ( max_size <= 0 )
+    if ( 0 == max_size )
         max_size = __list_size_max_limit;
 
     List_t* p_list = (List_t*)calloc( 1, sizeof(List_t) );
